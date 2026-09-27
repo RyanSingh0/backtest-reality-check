@@ -1,0 +1,116 @@
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Research audit &middot; Boston University &middot; Metropolitan College</div>
+  <h1>Backtest Reality Check</h1>
+  <p class="lede">Two studies of trading strategies that look profitable on paper. Each is put through the checks a model-validation team runs before real money goes in: is the data right, does it survive trading costs, is it better than luck, and does it depend on an arbitrary date?</p>
+  <div class="studies" id="studies"></div>
+</header>
+
+<nav class="jump" aria-label="Sections">
+  <a href="#ledger">Findings</a><a href="#money">Costs</a><a href="#luck">Luck</a><a href="#calendar">Calendar</a>
+  <a href="#dollar">Dollar data</a><a href="#screen">Data screen</a><a href="#business">Business use</a><a href="#risk">Risk engine</a>
+</nav>
+
+<section id="ledger">
+  <div class="sec-head"><div class="eyebrow">01 &middot; Summary</div><h2>What each check found</h2>
+  <p class="note">Each row compares the number a naive backtest reports with the number after the check.</p></div>
+  <div class="ledger" id="ledgerRows"></div>
+</section>
+
+<section id="money">
+  <div class="sec-head"><div class="eyebrow">02 &middot; Commodities &middot; Jan 2001 to Sep 2026</div><h2>Would the best strategy have made money after trading costs?</h2>
+  <p>We tested 1,372 distinct ways to rank nine commodities and hold the best, middle or worst group, at seven rebalance frequencies. The bars show the best one at each frequency, as the value of $100 invested at the start. The dashed line is simply holding the Bloomberg Commodity Index.</p></div>
+  <div class="panel" style="display:grid;gap:14px">
+    <div class="controls"><label for="costSeg">Trading cost per trade</label>
+      <div class="seg" id="costSeg" role="group" aria-label="Trading cost">
+        <button id="c0" data-c="0" aria-pressed="true">0 bp</button><button id="c1" data-c="1" aria-pressed="false">1 bp</button>
+        <button id="c2" data-c="2" aria-pressed="false">2 bp</button><button id="c5" data-c="5" aria-pressed="false">5 bp</button></div>
+      <span class="note">1 bp = $1 of cost per $10,000 traded</span></div>
+    <div class="legend"><span><i style="background:var(--good)"></i>Beats buy &amp; hold</span><span><i style="background:var(--bad)"></i>Trails buy &amp; hold</span><span><i style="background:var(--bh)"></i>Buy &amp; hold (dashed)</span></div>
+    <div class="chart"><canvas id="moneyChart" aria-label="Final value of $100 by rebalance frequency"></canvas></div>
+  </div>
+  <div class="panel tbl"><table id="moneyTable"></table>
+    <p class="note" style="margin-top:10px">Blue: buy and hold. Green: ends above buy and hold at that cost. Red: ends below. Break-even is the cost at which the strategy falls to buy and hold.</p></div>
+  <div class="kpis" id="shareKpis"></div>
+  <p class="callout">The daily strategy is the most profitable before costs and the least profitable after them: it trades about 360 times its capital a year, so at 5 bp it turns $100 into about $50. The daily winners also trade at the same closing price they are ranked on, which nobody can do; waiting one day halves their Sharpe ratio.</p>
+</section>
+
+<section id="luck">
+  <div class="sec-head"><div class="eyebrow">03 &middot; Commodities</div><h2>Is the best result better than luck?</h2>
+  <p>For each of the 32 search grids we re-ran the same search 200 times with the rankings shuffled at random. The luck ceiling is the best Sharpe ratio a random search of that size reaches 95% of the time. Points above the diagonal beat it.</p></div>
+  <div class="grid2">
+    <div class="panel"><div class="legend" id="luckLegend"></div><div class="chart tall"><canvas id="luckChart" aria-label="Best Sharpe ratio against luck ceiling"></canvas></div></div>
+    <div class="panel" style="display:grid;gap:14px;align-content:start">
+      <div class="kpis" id="luckKpis" style="grid-template-columns:repeat(3,1fr)"></div>
+      <p>Most grids sit below the line. Six of the eight that clear it by more than 0.01 are the <b>Worst</b> group at <b>daily</b> rebalancing: a one-day reversal that exists only at prices nobody can trade at.</p>
+      <p class="note">Momentum, the most popular idea in the literature, never clears the ceiling: buying recent winners and selling recent losers did no better than a random ranking.</p>
+    </div>
+  </div>
+</section>
+
+<section id="calendar">
+  <div class="sec-head"><div class="eyebrow">04 &middot; Commodities</div><h2>Does the rebalance date change the answer?</h2>
+  <p>An annual strategy can rebalance in January, February, or any other month. Nothing about the idea changes, yet the result does.</p></div>
+  <div class="grid2">
+    <div class="panel"><h3 style="margin-bottom:8px">Spread of Sharpe ratio across start dates</h3><div class="chart"><canvas id="calChart" aria-label="Sharpe range by frequency"></canvas></div></div>
+    <div class="panel tbl" style="display:grid;gap:12px;align-content:start"><table id="calTable"></table>
+      <p class="callout">The best annual strategy turns $100 into <b class="num">$2,150</b> when it rebalances in December. Across all 12 possible months its median is <b class="num">$416</b>.</p></div>
+  </div>
+</section>
+
+<section id="dollar">
+  <div class="sec-head"><div class="eyebrow">05 &middot; U.S. Dollar Index &middot; Dec 2010 to Dec 2025</div><h2>Same rule, two data feeds</h2>
+  <p>Split each day into an overnight part (previous close to open) and a daytime part (open to close). On a free data feed the overnight part loses money steadily and the daytime part nearly doubles. On exchange futures data for the same index, neither shows anything. The difference is a stale opening price in the free feed.</p></div>
+  <div class="legend"><span><i style="background:var(--bad)"></i>Overnight</span><span><i style="background:var(--good)"></i>Daytime</span><span><i style="background:var(--bh)"></i>Buy &amp; hold</span></div>
+  <div class="grid2">
+    <div class="panel"><h3>Free data feed</h3><div class="chart"><canvas id="freeChart" aria-label="Free feed legs"></canvas></div></div>
+    <div class="panel"><h3>Exchange futures</h3><div class="chart"><canvas id="exChart" aria-label="Exchange futures legs"></canvas></div></div>
+  </div>
+  <p class="note">Growth of $100 at each year end. A strategy built on the free-feed pattern returns 218.8%; on exchange data the same strategy returns about 1%.</p>
+</section>
+
+<section id="screen">
+  <div class="sec-head"><div class="eyebrow">06 &middot; Data quality</div><h2>A one-line check that catches a bad feed</h2>
+  <p>If a day's opening price is recorded honestly, it should land on the day's low about as often as on the day's high. We count both and run an exact binomial test. A series fails when the imbalance is significant after allowing for the number of series tested (p below 0.01 divided by that number), or when the recorded open falls outside the day's own high-low range on more than 1% of days.</p></div>
+  <div class="kpis" id="qualityKpis"></div>
+  <div class="panel" style="display:grid;gap:12px">
+    <div class="controls"><div class="seg" id="screenSeg" role="group" aria-label="Filter series">
+      <button id="sAll" data-f="all" aria-pressed="true">All 37 series</button><button id="sFail" data-f="fail" aria-pressed="false">Failing only</button></div></div>
+    <div class="tbl"><table id="screenTable"></table></div>
+  </div>
+  <p class="callout">The Barchart exchange-sourced futures (dollar index and five currencies) pass, and the free dollar index feed fails with p = 3.7e-13. The flagged Bloomberg series are the London Metal Exchange contracts, whose recorded open sits outside the daily range on 6&ndash;8% of days, and three U.S. grains (corn, soybeans, Kansas wheat) plus coffee.</p>
+</section>
+
+<section id="business">
+  <div class="sec-head"><div class="eyebrow">07 &middot; Practice</div><h2>Where this matters in a business</h2>
+  <p>Every check on this page maps to a job that asset managers, custodian banks and allocators do before they fund a strategy or trust a data feed.</p></div>
+  <div class="uses">
+    <div class="panel use"><div class="q">Model validation</div><p class="note">Banks and asset managers must independently challenge any model that drives money (U.S. Federal Reserve guidance SR 11-7).</p>
+      <ul><li>Count every variant that was tried, then correct for it</li><li>Compare the winner with a luck ceiling of the same size</li><li>Re-run on dates and periods it was not chosen on</li></ul></div>
+    <div class="panel use"><div class="q">Data vendor due diligence</div><p class="note">A wrong price feed produced a 218.8% backtest that the standard overfitting checks approved.</p>
+      <ul><li>Screen each feed's opens, highs and lows before use</li><li>Cross-check against an exchange-sourced series</li><li>Record which series fail and why</li></ul></div>
+    <div class="panel use"><div class="q">Trading cost budgets</div><p class="note">The most profitable strategy before costs loses half its money at 5 bp.</p>
+      <ul><li>Report the break-even cost next to every return</li><li>Reject strategies whose edge is below a realistic spread</li><li>Test with a one-day execution delay</li></ul></div>
+    <div class="panel use"><div class="q">Investment committee reporting</div><p class="note">A committee sees one backtest. It should also see how that backtest was chosen.</p>
+      <ul><li>Show the search size and the luck ceiling</li><li>Show the spread across rebalance dates</li><li>Show out-of-sample results next to in-sample ones</li></ul></div>
+  </div>
+</section>
+
+<section id="risk">
+  <div class="sec-head"><div class="eyebrow">08 &middot; Next project</div><h2>Multi-asset risk engine</h2>
+  <p>The same data now feeds a tested Python risk engine: value at risk, expected shortfall, Monte Carlo and bootstrap simulation, risk budgeting and dollar exposure, for a book of 40% equities, 30% commodities and 30% currencies (Dec 2010 to Dec 2025).</p></div>
+  <div class="kpis">
+    <div class="kpi"><div class="v">52%</div><div class="l">of the book's risk comes from its 40% equity weight</div></div>
+    <div class="kpi"><div class="v">78 / 33</div><div class="l">breaches of the normal 99% one-day VaR against 33 expected; the model is rejected</div></div>
+    <div class="kpi"><div class="v">11.1% vs 7.4%</div><div class="l">99% expected shortfall, bootstrap vs normal Monte Carlo: the normal model understates tail loss by a third</div></div>
+    <div class="kpi"><div class="v">&minus;0.61</div><div class="l">beta to the U.S. dollar: the book is in effect short the dollar</div></div>
+  </div>
+</section>
+
+<footer>
+  <div>Code: <a href="https://github.com/RyanSingh0/dxy-fx-strategies">dxy-fx-strategies</a> &middot; <a href="https://github.com/RyanSingh0/commodity-tercile-strategies">commodity-tercile-strategies</a> &middot; <a href="https://github.com/RyanSingh0/backtest-reality-check">backtest-reality-check</a> (this dashboard, SQL and database)</div>
+  <div>Aryan Meena and Eugene Pinsky, Boston University. Every figure on this page is read from SQL views in the project database <span class="num">research.db</span> (v_best_by_frequency, v_share_beating_bh, v_noise_verdict, v_rebalance_date_risk, v_data_quality) and matches the two manuscripts.</div>
+  <div>Only derived results are shown. No vendor price data is reproduced. Commodity data: Bloomberg total-return sub-indices. Dollar index: ICE futures via Barchart, and a free public feed as the control.</div>
+  <div>Backtests are hypothetical and do not include taxes, financing or market impact. This page is research, not investment advice.</div>
+</footer>
+</div>

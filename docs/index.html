@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Two backtest audits (U.S. Dollar Index and commodity futures) explained for non-technical readers.">
+<title>Backtest Reality Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+html,body{margin:0}
+footer a{color:var(--accent)}
+:root{
+  --ground:#F3F5F4; --surface:#FFFFFF; --ink:#17212B; --muted:#5A6670; --rule:#D8DEDC; --soft:#E9EDEC;
+  --bh:#2B6CB0; --bh-soft:#DCE8F6; --good:#2F7D4F; --good-soft:#DDEFE3; --bad:#C2413B; --bad-soft:#F8DEDB;
+  --flag:#A8620A; --flag-soft:#F6E7CF; --accent:#1F3A5F;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#10161C; --surface:#172029; --ink:#E6ECEF; --muted:#9AA7B1; --rule:#2B3742; --soft:#1E2933;
+    --bh:#6FA8E8; --bh-soft:#1D3350; --good:#5DBB84; --good-soft:#193528; --bad:#EE7F77; --bad-soft:#3F2220;
+    --flag:#E0A04A; --flag-soft:#3A2B15; --accent:#9DB7DA;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#10161C; --surface:#172029; --ink:#E6ECEF; --muted:#9AA7B1; --rule:#2B3742; --soft:#1E2933;
+  --bh:#6FA8E8; --bh-soft:#1D3350; --good:#5DBB84; --good-soft:#193528; --bad:#EE7F77; --bad-soft:#3F2220;
+  --flag:#E0A04A; --flag-soft:#3A2B15; --accent:#9DB7DA;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 64px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(30px,5vw,46px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:26px;font-weight:600}
+h3{font-size:18px;font-weight:600}
+p{margin:0;max-width:68ch}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+header.top{display:grid;gap:14px;padding-bottom:22px;border-bottom:2px solid var(--ink)}
+header.top .lede{font-size:17px;color:var(--muted)}
+.studies{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:6px}
+.study{border-left:3px solid var(--accent);padding:4px 0 4px 12px;display:grid;gap:2px}
+.study b{font-weight:600}
+.study span{color:var(--muted);font-size:13px}
+nav.jump{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--ground);border-bottom:1px solid var(--rule);
+  display:flex;gap:4px 18px;flex-wrap:wrap;padding:10px 0;margin-bottom:8px}
+nav.jump a{color:var(--ink);text-decoration:none;font-size:13px;font-weight:500;padding:2px 0;border-bottom:2px solid transparent}
+nav.jump a:hover,nav.jump a:focus-visible{border-bottom-color:var(--accent);outline:none}
+section{padding-top:40px;display:grid;gap:16px}
+.sec-head{display:grid;gap:6px}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:18px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+/* ledger */
+.ledger{display:grid;border-top:1px solid var(--rule)}
+.row{display:grid;grid-template-columns:110px 1fr 150px 150px;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--rule)}
+.row .claim{font-size:14.5px}
+.row .claim small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.fig{display:grid;gap:0}
+.fig .v{font-family:var(--mono);font-size:18px;font-weight:500;font-variant-numeric:tabular-nums}
+.fig .l{font-size:12px;color:var(--muted);line-height:1.3}
+.tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:3px;background:var(--soft);color:var(--ink);white-space:nowrap}
+.tag.dxy{background:var(--bh-soft);color:var(--bh)}
+.tag.com{background:var(--flag-soft);color:var(--flag)}
+@media (max-width:720px){
+  .row{grid-template-columns:1fr 1fr}
+  .row .claim{grid-column:1/-1}
+  .row .tagcell{grid-column:1/-1}
+}
+/* controls */
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:5px;overflow:hidden;background:var(--surface)}
+.seg button{font:500 13px var(--body);color:var(--ink);background:transparent;border:0;padding:7px 14px;cursor:pointer;border-right:1px solid var(--rule)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.controls label{font-size:13px;color:var(--muted)}
+.chart{position:relative;height:340px}
+.chart.tall{height:380px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-1px;margin-right:6px}
+/* tables */
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{font:600 12px var(--body);text-align:left;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;border-bottom:2px solid var(--rule);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.bh{background:var(--bh-soft)}
+td.up{background:var(--good-soft)}
+td.dn{background:var(--bad-soft)}
+.chip{display:inline-block;font:600 11px var(--mono);letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:3px;white-space:nowrap}
+.chip.pass{background:var(--good-soft);color:var(--good)}
+.chip.fail{background:var(--bad-soft);color:var(--bad)}
+.chip.close{background:var(--flag-soft);color:var(--flag)}
+.note{font-size:13px;color:var(--muted)}
+.callout{border-left:3px solid var(--flag);padding:10px 14px;background:var(--flag-soft);border-radius:0 4px 4px 0;font-size:14px;max-width:none}
+/* business */
+.uses{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.use{display:grid;gap:8px;align-content:start}
+.use .q{font-family:var(--display);font-weight:600;font-size:17px}
+.use ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.kpi{background:var(--surface);padding:14px;display:grid;gap:4px}
+.kpi .v{font:500 24px var(--mono);font-variant-numeric:tabular-nums}
+.kpi .l{font-size:12.5px;color:var(--muted);line-height:1.35}
+footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--muted);display:grid;gap:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">Research audit &middot; Boston University &middot; Metropolitan College</div>
+  <h1>Backtest Reality Check</h1>
+  <p class="lede">Two studies of trading strategies that look profitable on paper. Each is put through the checks a model-validation team runs before real money goes in: is the data right, does it survive trading costs, is it better than luck, and does it depend on an arbitrary date?</p>
+  <div class="studies" id="studies"></div>
+</header>
+
+<nav class="jump" aria-label="Sections">
+  <a href="#ledger">Findings</a><a href="#money">Costs</a><a href="#luck">Luck</a><a href="#calendar">Calendar</a>
+  <a href="#dollar">Dollar data</a><a href="#screen">Data screen</a><a href="#business">Business use</a><a href="#risk">Risk engine</a>
+</nav>
+
+<section id="ledger">
+  <div class="sec-head"><div class="eyebrow">01 &middot; Summary</div><h2>What each check found</h2>
+  <p class="note">Each row compares the number a naive backtest reports with the number after the check.</p></div>
+  <div class="ledger" id="ledgerRows"></div>
+</section>
+
+<section id="money">
+  <div class="sec-head"><div class="eyebrow">02 &middot; Commodities &middot; Jan 2001 to Sep 2026</div><h2>Would the best strategy have made money after trading costs?</h2>
+  <p>We tested 1,372 distinct ways to rank nine commodities and hold the best, middle or worst group, at seven rebalance frequencies. The bars show the best one at each frequency, as the value of $100 invested at the start. The dashed line is simply holding the Bloomberg Commodity Index.</p></div>
+  <div class="panel" style="display:grid;gap:14px">
+    <div class="controls"><label for="costSeg">Trading cost per trade</label>
+      <div class="seg" id="costSeg" role="group" aria-label="Trading cost">
+        <button id="c0" data-c="0" aria-pressed="true">0 bp</button><button id="c1" data-c="1" aria-pressed="false">1 bp</button>
+        <button id="c2" data-c="2" aria-pressed="false">2 bp</button><button id="c5" data-c="5" aria-pressed="false">5 bp</button></div>
+      <span class="note">1 bp = $1 of cost per $10,000 traded</span></div>
+    <div class="legend"><span><i style="background:var(--good)"></i>Beats buy &amp; hold</span><span><i style="background:var(--bad)"></i>Trails buy &amp; hold</span><span><i style="background:var(--bh)"></i>Buy &amp; hold (dashed)</span></div>
+    <div class="chart"><canvas id="moneyChart" aria-label="Final value of $100 by rebalance frequency"></canvas></div>
+  </div>
+  <div class="panel tbl"><table id="moneyTable"></table>
+    <p class="note" style="margin-top:10px">Blue: buy and hold. Green: ends above buy and hold at that cost. Red: ends below. Break-even is the cost at which the strategy falls to buy and hold.</p></div>
+  <div class="kpis" id="shareKpis"></div>
+  <p class="callout">The daily strategy is the most profitable before costs and the least profitable after them: it trades about 360 times its capital a year, so at 5 bp it turns $100 into about $50. The daily winners also trade at the same closing price they are ranked on, which nobody can do; waiting one day halves their Sharpe ratio.</p>
+</section>
+
+<section id="luck">
+  <div class="sec-head"><div class="eyebrow">03 &middot; Commodities</div><h2>Is the best result better than luck?</h2>
+  <p>For each of the 32 search grids we re-ran the same search 200 times with the rankings shuffled at random. The luck ceiling is the best Sharpe ratio a random search of that size reaches 95% of the time. Points above the diagonal beat it.</p></div>
+  <div class="grid2">
+    <div class="panel"><div class="legend" id="luckLegend"></div><div class="chart tall"><canvas id="luckChart" aria-label="Best Sharpe ratio against luck ceiling"></canvas></div></div>
+    <div class="panel" style="display:grid;gap:14px;align-content:start">
+      <div class="kpis" id="luckKpis" style="grid-template-columns:repeat(3,1fr)"></div>
+      <p>Most grids sit below the line. Six of the eight that clear it by more than 0.01 are the <b>Worst</b> group at <b>daily</b> rebalancing: a one-day reversal that exists only at prices nobody can trade at.</p>
+      <p class="note">Momentum, the most popular idea in the literature, never clears the ceiling: buying recent winners and selling recent losers did no better than a random ranking.</p>
+    </div>
+  </div>
+</section>
+
+<section id="calendar">
+  <div class="sec-head"><div class="eyebrow">04 &middot; Commodities</div><h2>Does the rebalance date change the answer?</h2>
+  <p>An annual strategy can rebalance in January, February, or any other month. Nothing about the idea changes, yet the result does.</p></div>
+  <div class="grid2">
+    <div class="panel"><h3 style="margin-bottom:8px">Spread of Sharpe ratio across start dates</h3><div class="chart"><canvas id="calChart" aria-label="Sharpe range by frequency"></canvas></div></div>
+    <div class="panel tbl" style="display:grid;gap:12px;align-content:start"><table id="calTable"></table>
+      <p class="callout">The best annual strategy turns $100 into <b class="num">$2,150</b> when it rebalances in December. Across all 12 possible months its median is <b class="num">$416</b>.</p></div>
+  </div>
+</section>
+
+<section id="dollar">
+  <div class="sec-head"><div class="eyebrow">05 &middot; U.S. Dollar Index &middot; Dec 2010 to Dec 2025</div><h2>Same rule, two data feeds</h2>
+  <p>Split each day into an overnight part (previous close to open) and a daytime part (open to close). On a free data feed the overnight part loses money steadily and the daytime part nearly doubles. On exchange futures data for the same index, neither shows anything. The difference is a stale opening price in the free feed.</p></div>
+  <div class="legend"><span><i style="background:var(--bad)"></i>Overnight</span><span><i style="background:var(--good)"></i>Daytime</span><span><i style="background:var(--bh)"></i>Buy &amp; hold</span></div>
+  <div class="grid2">
+    <div class="panel"><h3>Free data feed</h3><div class="chart"><canvas id="freeChart" aria-label="Free feed legs"></canvas></div></div>
+    <div class="panel"><h3>Exchange futures</h3><div class="chart"><canvas id="exChart" aria-label="Exchange futures legs"></canvas></div></div>
+  </div>
+  <p class="note">Growth of $100 at each year end. A strategy built on the free-feed pattern returns 218.8%; on exchange data the same strategy returns about 1%.</p>
+</section>
+
+<section id="screen">
+  <div class="sec-head"><div class="eyebrow">06 &middot; Data quality</div><h2>A one-line check that catches a bad feed</h2>
+  <p>If a day's opening price is recorded honestly, it should land on the day's low about as often as on the day's high. We count both and run an exact binomial test. A series fails when the imbalance is significant after allowing for the number of series tested (p below 0.01 divided by that number), or when the recorded open falls outside the day's own high-low range on more than 1% of days.</p></div>
+  <div class="kpis" id="qualityKpis"></div>
+  <div class="panel" style="display:grid;gap:12px">
+    <div class="controls"><div class="seg" id="screenSeg" role="group" aria-label="Filter series">
+      <button id="sAll" data-f="all" aria-pressed="true">All 37 series</button><button id="sFail" data-f="fail" aria-pressed="false">Failing only</button></div></div>
+    <div class="tbl"><table id="screenTable"></table></div>
+  </div>
+  <p class="callout">The Barchart exchange-sourced futures (dollar index and five currencies) pass, and the free dollar index feed fails with p = 3.7e-13. The flagged Bloomberg series are the London Metal Exchange contracts, whose recorded open sits outside the daily range on 6&ndash;8% of days, and three U.S. grains (corn, soybeans, Kansas wheat) plus coffee.</p>
+</section>
+
+<section id="business">
+  <div class="sec-head"><div class="eyebrow">07 &middot; Practice</div><h2>Where this matters in a business</h2>
+  <p>Every check on this page maps to a job that asset managers, custodian banks and allocators do before they fund a strategy or trust a data feed.</p></div>
+  <div class="uses">
+    <div class="panel use"><div class="q">Model validation</div><p class="note">Banks and asset managers must independently challenge any model that drives money (U.S. Federal Reserve guidance SR 11-7).</p>
+      <ul><li>Count every variant that was tried, then correct for it</li><li>Compare the winner with a luck ceiling of the same size</li><li>Re-run on dates and periods it was not chosen on</li></ul></div>
+    <div class="panel use"><div class="q">Data vendor due diligence</div><p class="note">A wrong price feed produced a 218.8% backtest that the standard overfitting checks approved.</p>
+      <ul><li>Screen each feed's opens, highs and lows before use</li><li>Cross-check against an exchange-sourced series</li><li>Record which series fail and why</li></ul></div>
+    <div class="panel use"><div class="q">Trading cost budgets</div><p class="note">The most profitable strategy before costs loses half its money at 5 bp.</p>
+      <ul><li>Report the break-even cost next to every return</li><li>Reject strategies whose edge is below a realistic spread</li><li>Test with a one-day execution delay</li></ul></div>
+    <div class="panel use"><div class="q">Investment committee reporting</div><p class="note">A committee sees one backtest. It should also see how that backtest was chosen.</p>
+      <ul><li>Show the search size and the luck ceiling</li><li>Show the spread across rebalance dates</li><li>Show out-of-sample results next to in-sample ones</li></ul></div>
+  </div>
+</section>
+
+<section id="risk">
+  <div class="sec-head"><div class="eyebrow">08 &middot; Next project</div><h2>Multi-asset risk engine</h2>
+  <p>The same data now feeds a tested Python risk engine: value at risk, expected shortfall, Monte Carlo and bootstrap simulation, risk budgeting and dollar exposure, for a book of 40% equities, 30% commodities and 30% currencies (Dec 2010 to Dec 2025).</p></div>
+  <div class="kpis">
+    <div class="kpi"><div class="v">52%</div><div class="l">of the book's risk comes from its 40% equity weight</div></div>
+    <div class="kpi"><div class="v">78 / 33</div><div class="l">breaches of the normal 99% one-day VaR against 33 expected; the model is rejected</div></div>
+    <div class="kpi"><div class="v">11.1% vs 7.4%</div><div class="l">99% expected shortfall, bootstrap vs normal Monte Carlo: the normal model understates tail loss by a third</div></div>
+    <div class="kpi"><div class="v">&minus;0.61</div><div class="l">beta to the U.S. dollar: the book is in effect short the dollar</div></div>
+  </div>
+</section>
+
+<footer>
+  <div>Code: <a href="https://github.com/RyanSingh0/dxy-fx-strategies">dxy-fx-strategies</a> &middot; <a href="https://github.com/RyanSingh0/commodity-tercile-strategies">commodity-tercile-strategies</a> &middot; <a href="https://github.com/RyanSingh0/backtest-reality-check">backtest-reality-check</a> (this dashboard, SQL and database)</div>
+  <div>Aryan Meena and Eugene Pinsky, Boston University. Every figure on this page is read from SQL views in the project database <span class="num">research.db</span> (v_best_by_frequency, v_share_beating_bh, v_noise_verdict, v_rebalance_date_risk, v_data_quality) and matches the two manuscripts.</div>
+  <div>Only derived results are shown. No vendor price data is reproduced. Commodity data: Bloomberg total-return sub-indices. Dollar index: ICE futures via Barchart, and a free public feed as the control.</div>
+  <div>Backtests are hypothetical and do not include taxes, financing or market impact. This page is research, not investment advice.</div>
+</footer>
+</div>
+<script>window.__DATA__={"best":[{"frequency":"Annual","label":"Middle 2 of top 6 (2-2-2), 21d lookback, annual rebalance","v0":2149.72,"v1":2143.277,"v2":2136.852,"v5":2117.689,"be":738.946,"turn":1.173,"mdd":-0.597},{"frequency":"Biweekly","label":"Middle 2 of top 7 (2-2-3), 10d lookback, biweekly rebalance","v0":1407.391,"v1":1281.874,"v2":1167.534,"v5":882.068,"be":20.52,"turn":36.389,"mdd":-0.685},{"frequency":"Daily","label":"Worst 2 of top 7 (3-2-2), 1d lookback, daily rebalance","v0":5117.245,"v1":2031.08,"v2":806.027,"v5":50.328,"be":3.474,"turn":360.064,"mdd":-0.695},{"frequency":"Monthly","label":"Middle 2 of top 7 (2-2-3), 21d lookback, monthly rebalance","v0":804.656,"v1":772.428,"v2":741.486,"v5":655.873,"be":33.206,"turn":15.94,"mdd":-0.719},{"frequency":"Quarterly","label":"Middle 2 of top 6 (2-2-2), 5d lookback, quarterly rebalance","v0":1308.388,"v1":1291.242,"v2":1274.319,"v5":1224.852,"be":138.516,"turn":5.156,"mdd":-0.796},{"frequency":"Semiannual","label":"Middle 2 of top 7 (3-2-2), 252d lookback, semiannual rebalance","v0":1396.185,"v1":1386.275,"v2":1376.433,"v5":1347.316,"be":262.546,"turn":2.788,"mdd":-0.634},{"frequency":"Weekly","label":"Middle 3 of top 9 (3-3-3), 10d lookback, weekly rebalance","v0":1379.078,"v1":1177.241,"v2":1004.922,"v5":624.993,"be":11.995,"turn":61.653,"mdd":-0.634}],"bh":206.3417540905642,"share":[{"cost_bp":0.0,"n_strategies":1372,"n_beat_bh":541,"share_beat_bh":0.3943},{"cost_bp":1.0,"n_strategies":1372,"n_beat_bh":506,"share_beat_bh":0.3688},{"cost_bp":2.0,"n_strategies":1372,"n_beat_bh":473,"share_beat_bh":0.3448},{"cost_bp":5.0,"n_strategies":1372,"n_beat_bh":389,"share_beat_bh":0.2835}],"noise":[{"universe":"Top6","split":"2-2-2","grp":"Top","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.447,"luck_ceiling":0.612,"verdict":"within luck"},{"universe":"Top6","split":"2-2-2","grp":"Median","best_config":"Monthly (21d)/Annual","best_sharpe":0.612,"luck_ceiling":0.614,"verdict":"too close to call"},{"universe":"Top6","split":"2-2-2","grp":"Worst","best_config":"Daily (1d)/Daily","best_sharpe":0.612,"luck_ceiling":0.61,"verdict":"too close to call"},{"universe":"Top6","split":"2-2-2","grp":"Top-minus-Worst","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.432,"luck_ceiling":0.572,"verdict":"within luck"},{"universe":"Top7","split":"3-2-2","grp":"Top","best_config":"Annual (252d)/Daily","best_sharpe":0.486,"luck_ceiling":0.573,"verdict":"within luck"},{"universe":"Top7","split":"3-2-2","grp":"Median","best_config":"Daily (1d)/Daily","best_sharpe":0.591,"luck_ceiling":0.619,"verdict":"within luck"},{"universe":"Top7","split":"3-2-2","grp":"Worst","best_config":"Daily (1d)/Daily","best_sharpe":0.665,"luck_ceiling":0.616,"verdict":"better than luck"},{"universe":"Top7","split":"3-2-2","grp":"Top-minus-Worst","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.428,"luck_ceiling":0.576,"verdict":"within luck"},{"universe":"Top7","split":"2-3-2","grp":"Top","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.47,"luck_ceiling":0.606,"verdict":"within luck"},{"universe":"Top7","split":"2-3-2","grp":"Median","best_config":"Monthly (21d)/Annual","best_sharpe":0.573,"luck_ceiling":0.574,"verdict":"too close to call"},{"universe":"Top7","split":"2-3-2","grp":"Worst","best_config":"Daily (1d)/Daily","best_sharpe":0.665,"luck_ceiling":0.616,"verdict":"better than luck"},{"universe":"Top7","split":"2-3-2","grp":"Top-minus-Worst","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.47,"luck_ceiling":0.563,"verdict":"within luck"},{"universe":"Top7","split":"2-2-3","grp":"Top","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.47,"luck_ceiling":0.606,"verdict":"within luck"},{"universe":"Top7","split":"2-2-3","grp":"Median","best_config":"Biweekly (10d)/Biweekly","best_sharpe":0.561,"luck_ceiling":0.635,"verdict":"within luck"},{"universe":"Top7","split":"2-2-3","grp":"Worst","best_config":"Daily (1d)/Daily","best_sharpe":0.698,"luck_ceiling":0.57,"verdict":"better than luck"},{"universe":"Top7","split":"2-2-3","grp":"Top-minus-Worst","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.43,"luck_ceiling":0.589,"verdict":"within luck"},{"universe":"Top8","split":"3-3-2","grp":"Top","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.479,"luck_ceiling":0.551,"verdict":"within luck"},{"universe":"Top8","split":"3-3-2","grp":"Median","best_config":"Daily (1d)/Daily","best_sharpe":0.603,"luck_ceiling":0.55,"verdict":"better than luck"},{"universe":"Top8","split":"3-3-2","grp":"Worst","best_config":"Daily (1d)/Daily","best_sharpe":0.516,"luck_ceiling":0.614,"verdict":"within luck"},{"universe":"Top8","split":"3-3-2","grp":"Top-minus-Worst","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.459,"luck_ceiling":0.591,"verdict":"within luck"},{"universe":"Top8","split":"3-2-3","grp":"Top","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.479,"luck_ceiling":0.551,"verdict":"within luck"},{"universe":"Top8","split":"3-2-3","grp":"Median","best_config":"Semiannual (126d)/Annual","best_sharpe":0.532,"luck_ceiling":0.607,"verdict":"within luck"},{"universe":"Top8","split":"3-2-3","grp":"Worst","best_config":"Daily (1d)/Daily","best_sharpe":0.591,"luck_ceiling":0.566,"verdict":"better than luck"},{"universe":"Top8","split":"3-2-3","grp":"Top-minus-Worst","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.439,"luck_ceiling":0.588,"verdict":"within luck"},{"universe":"Top8","split":"2-3-3","grp":"Top","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.495,"luck_ceiling":0.611,"verdict":"within luck"},{"universe":"Top8","split":"2-3-3","grp":"Median","best_config":"Biweekly (10d)/Weekly","best_sharpe":0.494,"luck_ceiling":0.571,"verdict":"within luck"},{"universe":"Top8","split":"2-3-3","grp":"Worst","best_config":"Daily (1d)/Daily","best_sharpe":0.591,"luck_ceiling":0.566,"verdict":"better than luck"},{"universe":"Top8","split":"2-3-3","grp":"Top-minus-Worst","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.463,"luck_ceiling":0.584,"verdict":"within luck"},{"universe":"Top9","split":"3-3-3","grp":"Top","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.5,"luck_ceiling":0.604,"verdict":"within luck"},{"universe":"Top9","split":"3-3-3","grp":"Median","best_config":"Biweekly (10d)/Weekly","best_sharpe":0.62,"luck_ceiling":0.596,"verdict":"better than luck"},{"universe":"Top9","split":"3-3-3","grp":"Worst","best_config":"Daily (1d)/Daily","best_sharpe":0.672,"luck_ceiling":0.606,"verdict":"better than luck"},{"universe":"Top9","split":"3-3-3","grp":"Top-minus-Worst","best_config":"Weekly (5d)/Semiannual","best_sharpe":0.424,"luck_ceiling":0.555,"verdict":"within luck"}],"groups":[{"grp":"Median","n":392,"avg_sharpe":0.341,"avg_equal_weight_sharpe":0.293,"share_beating_equal_weight":0.679,"avg_volatility":0.218},{"grp":"Top","n":392,"avg_sharpe":0.195,"avg_equal_weight_sharpe":0.293,"share_beating_equal_weight":0.222,"avg_volatility":0.262},{"grp":"Worst","n":392,"avg_sharpe":0.156,"avg_equal_weight_sharpe":0.293,"share_beating_equal_weight":0.12,"avg_volatility":0.272}],"calendar":[{"frequency":"Annual","n_strategies":224,"avg_sharpe_range_across_dates":0.437,"share_where_calendar_date_is_best":0.054},{"frequency":"Biweekly","n_strategies":224,"avg_sharpe_range_across_dates":0.092,"share_where_calendar_date_is_best":0.509},{"frequency":"Quarterly","n_strategies":224,"avg_sharpe_range_across_dates":0.166,"share_where_calendar_date_is_best":0.268},{"frequency":"Semiannual","n_strategies":224,"avg_sharpe_range_across_dates":0.393,"share_where_calendar_date_is_best":0.116}],"quality":[{"source":"Barchart, exchange sourced","n_series":6,"n_fail":0},{"source":"Bloomberg generic 1st","n_series":30,"n_fail":9},{"source":"Free provider (paper control)","n_series":1,"n_fail":1}],"screen":[{"series":"Soybean Oil (BO1 Comdty)","source":"Bloomberg generic 1st","sector":"Grains","open_at_low":594,"open_at_high":714,"binomial_p":0.0009932789351836,"open_outside_range_pct":0.392099912866686,"flag":"pass"},{"series":"Corn (C 1 Comdty)","source":"Bloomberg generic 1st","sector":"Grains","open_at_low":443,"open_at_high":326,"binomial_p":2.78208286653992e-05,"open_outside_range_pct":0.086194512282718,"flag":"FAIL"},{"series":"Cocoa (CC1 Comdty)","source":"Bloomberg generic 1st","sector":"Softs","open_at_low":798,"open_at_high":837,"binomial_p":0.3473349541418913,"open_outside_range_pct":0.3648477157360406,"flag":"pass"},{"series":"WTI Crude Oil (CL1 Comdty)","source":"Bloomberg generic 1st","sector":"Energy","open_at_low":126,"open_at_high":115,"binomial_p":0.5195592474984537,"open_outside_range_pct":0.100459242250287,"flag":"pass"},{"series":"Brent Crude Oil (CO1 Comdty)","source":"Bloomberg generic 1st","sector":"Energy","open_at_low":218,"open_at_high":207,"binomial_p":0.6276776288937111,"open_outside_range_pct":0.0430539609644087,"flag":"pass"},{"series":"Cotton (CT1 Comdty)","source":"Bloomberg generic 1st","sector":"Softs","open_at_low":760,"open_at_high":785,"binomial_p":0.5414872451691506,"open_outside_range_pct":0.0902391337043164,"flag":"pass"},{"series":"Feeder Cattle (FC1 Comdty)","source":"Bloomberg generic 1st","sector":"Livestock","open_at_low":500,"open_at_high":579,"binomial_p":0.0175291743843019,"open_outside_range_pct":0.4601006470165348,"flag":"pass"},{"series":"Gold (GC1 Comdty)","source":"Bloomberg generic 1st","sector":"Precious Metals","open_at_low":577,"open_at_high":545,"binomial_p":0.3547234180381029,"open_outside_range_pct":0.218435998252512,"flag":"pass"},{"series":"Copper (HG1 Comdty)","source":"Bloomberg generic 1st","sector":"Industrial Metals","open_at_low":605,"open_at_high":561,"binomial_p":0.2079134772383214,"open_outside_range_pct":0.2729885057471264,"flag":"pass"},{"series":"Heating Oil (ULSD) (HO1 Comdty)","source":"Bloomberg generic 1st","sector":"Energy","open_at_low":217,"open_at_high":222,"binomial_p":0.848623881995494,"open_outside_range_pct":0.6457167455876023,"flag":"pass"},{"series":"Orange Juice (JO1 Comdty)","source":"Bloomberg generic 1st","sector":"Softs","open_at_low":809,"open_at_high":852,"binomial_p":0.3027555217356939,"open_outside_range_pct":0.1487652484379649,"flag":"pass"},{"series":"Coffee (KC1 Comdty)","source":"Bloomberg generic 1st","sector":"Softs","open_at_low":704,"open_at_high":896,"binomial_p":1.7490335785855729e-06,"open_outside_range_pct":0.2882281553398058,"flag":"FAIL"},{"series":"Wheat (Kansas HRW) (KW1 Comdty)","source":"Bloomberg generic 1st","sector":"Grains","open_at_low":653,"open_at_high":557,"binomial_p":0.006289853979078,"open_outside_range_pct":1.500441306266549,"flag":"FAIL"},{"series":"Aluminium (LA1 Comdty)","source":"Bloomberg generic 1st","sector":"Industrial Metals","open_at_low":1266,"open_at_high":1315,"binomial_p":0.3447545063640734,"open_outside_range_pct":6.973030518097942,"flag":"FAIL"},{"series":"Live Cattle (LC1 Comdty)","source":"Bloomberg generic 1st","sector":"Livestock","open_at_low":357,"open_at_high":440,"binomial_p":0.0036508121656341,"open_outside_range_pct":0.4890678941311853,"flag":"pass"},{"series":"Lean Hogs (LH1 Comdty)","source":"Bloomberg generic 1st","sector":"Livestock","open_at_low":396,"open_at_high":473,"binomial_p":0.0098936831632832,"open_outside_range_pct":0.6316393913293138,"flag":"pass"},{"series":"Lead (LL1 Comdty)","source":"Bloomberg generic 1st","sector":"Industrial Metals","open_at_low":1300,"open_at_high":1347,"binomial_p":0.3712771827476509,"open_outside_range_pct":6.626650660264105,"flag":"FAIL"},{"series":"Nickel (LN1 Comdty)","source":"Bloomberg generic 1st","sector":"Industrial Metals","open_at_low":1727,"open_at_high":1366,"binomial_p":9.155761880199236e-11,"open_outside_range_pct":7.661452065784196,"flag":"FAIL"},{"series":"Tin (LT1 Comdty)","source":"Bloomberg generic 1st","sector":"Industrial Metals","open_at_low":885,"open_at_high":905,"binomial_p":0.6533834846997033,"open_outside_range_pct":7.705406555981269,"flag":"FAIL"},{"series":"Zinc (LX1 Comdty)","source":"Bloomberg generic 1st","sector":"Industrial Metals","open_at_low":1363,"open_at_high":1401,"binomial_p":0.4815807234097426,"open_outside_range_pct":8.42227828449447,"flag":"FAIL"},{"series":"Natural Gas (NG1 Comdty)","source":"Bloomberg generic 1st","sector":"Energy","open_at_low":119,"open_at_high":152,"binomial_p":0.0517113819236842,"open_outside_range_pct":0.7748600947051227,"flag":"pass"},{"series":"Palladium (PA1 Comdty)","source":"Bloomberg generic 1st","sector":"Precious Metals","open_at_low":876,"open_at_high":871,"binomial_p":0.9237621561342938,"open_outside_range_pct":0.2878157978893508,"flag":"pass"},{"series":"Platinum (PL1 Comdty)","source":"Bloomberg generic 1st","sector":"Precious Metals","open_at_low":874,"open_at_high":798,"binomial_p":0.066594463604943,"open_outside_range_pct":0.3691739732348869,"flag":"pass"},{"series":"Low Sulphur Gasoil (QS1 Comdty)","source":"Bloomberg generic 1st","sector":"Energy","open_at_low":422,"open_at_high":370,"binomial_p":0.069887052613537,"open_outside_range_pct":0.1722158438576349,"flag":"pass"},{"series":"Soybeans (S 1 Comdty)","source":"Bloomberg generic 1st","sector":"Grains","open_at_low":499,"open_at_high":319,"binomial_p":3.3134119540097416e-10,"open_outside_range_pct":0.1296456352636127,"flag":"FAIL"},{"series":"Sugar (SB1 Comdty)","source":"Bloomberg generic 1st","sector":"Softs","open_at_low":353,"open_at_high":347,"binomial_p":0.8501237785062915,"open_outside_range_pct":0.0286985220261156,"flag":"pass"},{"series":"Silver (SI1 Comdty)","source":"Bloomberg generic 1st","sector":"Precious Metals","open_at_low":656,"open_at_high":603,"binomial_p":0.1427499251636687,"open_outside_range_pct":0.2788376871147637,"flag":"pass"},{"series":"Soybean Meal (SM1 Comdty)","source":"Bloomberg generic 1st","sector":"Grains","open_at_low":517,"open_at_high":579,"binomial_p":0.0653424185201931,"open_outside_range_pct":0.1874549387166546,"flag":"pass"},{"series":"Wheat (Chicago) (W 1 Comdty)","source":"Bloomberg generic 1st","sector":"Grains","open_at_low":472,"open_at_high":440,"binomial_p":0.304647726060481,"open_outside_range_pct":0.0434090580234408,"flag":"pass"},{"series":"RBOB Gasoline (XB1 Comdty)","source":"Bloomberg generic 1st","sector":"Energy","open_at_low":178,"open_at_high":193,"binomial_p":0.467369231011055,"open_outside_range_pct":0.1308900523560209,"flag":"pass"},{"series":"U.S. Dollar Index futures (DX)","source":"Barchart, exchange sourced","sector":"FX","open_at_low":64,"open_at_high":60,"binomial_p":0.7877465824023692,"open_outside_range_pct":0.0,"flag":"pass"},{"series":"Euro futures (E6)","source":"Barchart, exchange sourced","sector":"FX","open_at_low":21,"open_at_high":20,"binomial_p":0.9999999999999936,"open_outside_range_pct":0.0,"flag":"pass"},{"series":"Sterling futures (B6)","source":"Barchart, exchange sourced","sector":"FX","open_at_low":41,"open_at_high":21,"binomial_p":0.0151340809974469,"open_outside_range_pct":0.0,"flag":"pass"},{"series":"Canadian dollar futures (D6)","source":"Barchart, exchange sourced","sector":"FX","open_at_low":40,"open_at_high":50,"binomial_p":0.342833119420803,"open_outside_range_pct":0.0,"flag":"pass"},{"series":"Yen futures (J6)","source":"Barchart, exchange sourced","sector":"FX","open_at_low":35,"open_at_high":44,"binomial_p":0.3681876338306275,"open_outside_range_pct":0.0,"flag":"pass"},{"series":"Swiss franc futures (S6)","source":"Barchart, exchange sourced","sector":"FX","open_at_low":37,"open_at_high":44,"binomial_p":0.5052364407669266,"open_outside_range_pct":0.0,"flag":"pass"},{"series":"U.S. Dollar Index (free provider)","source":"Free provider (paper control)","sector":"FX","open_at_low":204,"open_at_high":82,"binomial_p":3.676542919171523e-13,"open_outside_range_pct":0.0,"flag":"FAIL"}],"findings":[{"study":"DXY","theme":"Data defect","metric":"Overnight-leg Sharpe ratio","value_a":-1.43,"label_a":"Free provider","value_b":0.25,"label_b":"Exchange futures","plain_english":"The same trading rule on the same index shows a strong overnight effect on free data and none on exchange data."},{"study":"DXY","theme":"Data defect","metric":"Headline strategy total return (%)","value_a":218.8,"label_a":"Free provider","value_b":1.0,"label_b":"Exchange futures","plain_english":"A backtest that more than tripled money on free data earns about 1% on correct data."},{"study":"DXY","theme":"Data defect","metric":"Probability of backtest overfitting","value_a":0.016,"label_a":"Free provider","value_b":0.765,"label_b":"Exchange futures","plain_english":"The standard overfitting check calls the fake result robust and the real data noise: the tool certifies the defect."},{"study":"DXY","theme":"Data defect","metric":"Opens at the daily low vs high","value_a":204.0,"label_a":"Free provider (at low)","value_b":82.0,"label_b":"Free provider (at high)","plain_english":"A one-line statistical check on the data itself (p = 3.7e-13) finds the problem with no second data source."},{"study":"DXY","theme":"Undeclared search","metric":"Regime-strategy Sharpe as reported vs deflated Sharpe after declaring 216 configurations","value_a":0.72,"label_a":"Reported","value_b":0.613,"label_b":"Deflated Sharpe (needs > 0.95)","plain_english":"A strategy that looked significant fails every correction once all the variants that were tried are counted."},{"study":"DXY","theme":"Honest search","metric":"Best Sharpe of 1,312 configurations vs luck ceiling","value_a":0.653,"label_a":"Best real","value_b":0.712,"label_b":"Luck ceiling (block bootstrap)","plain_english":"A correctly declared search of 1,312 published strategy specifications finds none better than luck."},{"study":"COMMODITIES","theme":"Momentum","metric":"Best momentum-spread Sharpe vs median best under random ranking","value_a":0.46962804037784434,"label_a":"Best real","value_b":0.41195097926788093,"label_b":"Random ranking (median best)","plain_english":"Buying recent winners and selling recent losers does no better than a random ranking in a search this size."},{"study":"COMMODITIES","theme":"Volatility sorting","metric":"Share of cells where the middle group beats equal weight","value_a":0.6785714285714286,"label_a":"Middle group","value_b":0.22193877551020408,"label_b":"Top group","plain_english":"The middle group wins mostly by holding the most volatile commodity (natural gas) less often."},{"study":"COMMODITIES","theme":"Execution","metric":"One-day reversal Sharpe: same close vs one day later (Top 9)","value_a":0.6724493042132349,"label_a":"Same close","value_b":0.33741660422219577,"label_b":"One day later","plain_english":"The best-looking effect exists only at prices nobody can trade at, and costs of about 5 bp remove it."},{"study":"COMMODITIES","theme":"Rebalance date","metric":"Best annual strategy: final value of $100, December vs median of all 12 months","value_a":2149.719869715526,"label_a":"December rebalance","value_b":415.82808030135874,"label_b":"Median over 12 months","plain_english":"The best strategy after costs owes its rank to the calendar date it rebalances on."},{"study":"COMMODITIES","theme":"Out of sample","metric":"Top 5 chosen on 2001-2013: best final value of $100 over 2014-2026 vs buy & hold","value_a":96.66005767927773,"label_a":"Best of the 5","value_b":149.07682676604068,"label_b":"Buy & hold","plain_english":"The strategies that looked best in the first half all trailed buy-and-hold in the second."}],"legs":{"Exchange futures|Buy and hold":[["2010",98.17],["2011",99.7],["2012",98.9],["2013",99.29],["2014",112.24],["2015",122.27],["2016",126.65],["2017",113.7],["2018",118.54],["2019",118.94],["2020",111.31],["2021",118.36],["2022",127.87],["2023",125.09],["2024",134.09],["2025",121.29]],"Exchange futures|Daytime":[["2010",97.48],["2011",96.55],["2012",96.15],["2013",93.79],["2014",103.91],["2015",105.53],["2016",106.87],["2017",95.93],["2018",101.78],["2019",104.14],["2020",99.27],["2021",104.84],["2022",111.83],["2023",112.89],["2024",121.38],["2025",110.69]],"Exchange futures|Overnight":[["2010",100.01],["2011",102.53],["2012",102.14],["2013",105.12],["2014",107.26],["2015",115.04],["2016",117.67],["2017",117.68],["2018",115.65],["2019",113.41],["2020",111.33],["2021",112.1],["2022",113.53],["2023",110.03],["2024",109.69],["2025",108.8]],"Free provider|Buy and hold":[["2010",97.92],["2011",99.33],["2012",98.84],["2013",99.17],["2014",111.84],["2015",122.2],["2016",126.86],["2017",114.14],["2018",119.15],["2019",119.43],["2020",111.44],["2021",118.54],["2022",128.26],["2023",125.55],["2024",134.42],["2025",121.72]],"Free provider|Daytime":[["2010",97.24],["2011",95.15],["2012",95.31],["2013",128.69],["2014",144.68],["2015",157.67],["2016",166.38],["2017",151.87],["2018",165.78],["2019",171.23],["2020",167.22],["2021",178.09],["2022",193.02],["2023",193.92],["2024",209.12],["2025",196.01]],"Free provider|Overnight":[["2010",99.81],["2011",102.63],["2012",102.46],["2013",75.64],["2014",75.51],["2015",75.87],["2016",73.57],["2017",72.12],["2018",69.31],["2019",67.31],["2020",64.21],["2021",64.28],["2022",64.46],["2023",62.42],["2024",62.13],["2025",61.02]]},"studies":[{"short_name":"DXY","title":"Two Blind Spots in Backtest Validation: From a Manufactured Dollar Index Anomaly to a Corrected Null Result","journal":"Risks (MDPI)","status":"Submitted","sample_start":"2010-12-01","sample_end":"2025-12-30"},{"short_name":"COMMODITIES","title":"Volatility Sorting, an Untradeable Reversal and Rebalance-Date Luck: What Survives a Declared Search Over Cross-Sectional Commodity Strategies","journal":"Commodities (MDPI)","status":"Manuscript ready","sample_start":"2001-01-05","sample_end":"2026-09-17"}]};</script>
+<script>(function () {
+  const D = window.__DATA__;
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const $ = id => document.getElementById(id);
+  const money = v => '$' + Math.round(v).toLocaleString('en-US');
+  const FREQ = ['Daily', 'Weekly', 'Biweekly', 'Monthly', 'Quarterly', 'Semiannual', 'Annual'];
+  const best = FREQ.map(f => D.best.find(b => b.frequency === f));
+  const BH = D.bh;
+  let cost = 0, screenFilter = 'all';
+  const charts = {};
+
+  // studies
+  $('studies').innerHTML = D.studies.map(s =>
+    `<div class="study"><b>${s.title}</b><span>${s.journal} &middot; ${s.status} &middot; ${s.sample_start.slice(0, 4)} to ${s.sample_end.slice(0, 4)}</span></div>`).join('');
+
+  // ledger
+  const fmt = (v, metric) => {
+    if (/\$|value of \$100/i.test(metric)) return money(v);
+    if (/share/i.test(metric)) return Math.round(v * 100) + '%';
+    if (/%\)/.test(metric)) return v.toFixed(1) + '%';
+    if (/Opens at/.test(metric)) return v.toFixed(0);
+    return (v < 0 ? '−' : '') + Math.abs(v).toFixed(v >= 10 ? 1 : 3).replace(/0$/, '');
+  };
+  $('ledgerRows').innerHTML = D.findings.map(f => `
+    <div class="row">
+      <div class="tagcell"><span class="tag ${f.study === 'DXY' ? 'dxy' : 'com'}">${f.study === 'DXY' ? 'Dollar index' : 'Commodities'}</span></div>
+      <div class="claim">${f.plain_english}<small>${f.theme}: ${f.metric}</small></div>
+      <div class="fig"><span class="v">${fmt(f.value_a, f.metric)}</span><span class="l">${f.label_a}</span></div>
+      <div class="fig"><span class="v">${fmt(f.value_b, f.metric)}</span><span class="l">${f.label_b}</span></div>
+    </div>`).join('');
+
+  // share KPIs
+  $('shareKpis').innerHTML = D.share.map(s =>
+    `<div class="kpi"><div class="v">${(s.share_beat_bh * 100).toFixed(1)}%</div><div class="l">of ${s.n_strategies.toLocaleString()} strategies beat buy &amp; hold at ${s.cost_bp} bp (${s.n_beat_bh})</div></div>`).join('');
+
+  // money table
+  function moneyTable() {
+    const cls = v => v > BH ? 'up' : 'dn';
+    let h = `<thead><tr><th>Frequency</th><th>Best strategy</th><th class="n">0 bp</th><th class="n">1 bp</th><th class="n">2 bp</th><th class="n">5 bp</th><th class="n">Break-even</th><th class="n">Turnover / yr</th><th class="n">Worst drawdown</th></tr></thead><tbody>`;
+    h += `<tr><td>Buy &amp; hold</td><td>Bloomberg Commodity Index</td>${[0, 1, 2, 3].map(() => `<td class="n bh">${money(BH)}</td>`).join('')}<td class="n">&ndash;</td><td class="n">&ndash;</td><td class="n">&ndash;</td></tr>`;
+    best.forEach(b => {
+      h += `<tr><td>${b.frequency}</td><td>${b.label.replace(/, \w+ rebalance$/, '')}</td>${['v0', 'v1', 'v2', 'v5'].map(k => `<td class="n ${cls(b[k])}">${money(b[k])}</td>`).join('')}` +
+        `<td class="n">${b.be >= 100 ? Math.round(b.be) : b.be.toFixed(1)} bp</td><td class="n">${b.turn.toFixed(1)}&times;</td><td class="n">${(b.mdd * 100).toFixed(0)}%</td></tr>`;
+    });
+    $('moneyTable').innerHTML = h + '</tbody>';
+  }
+
+  // calendar table
+  const nOff = { Biweekly: 2, Quarterly: 3, Semiannual: 6, Annual: 12 };
+  const cal = ['Biweekly', 'Quarterly', 'Semiannual', 'Annual'].map(f => D.calendar.find(c => c.frequency === f));
+  $('calTable').innerHTML = `<thead><tr><th>Frequency</th><th class="n">Possible dates</th><th class="n">Standard date is best</th><th class="n">By chance</th></tr></thead><tbody>` +
+    cal.map(c => `<tr><td>${c.frequency}</td><td class="n">${nOff[c.frequency]}</td><td class="n">${(c.share_where_calendar_date_is_best * 100).toFixed(0)}%</td><td class="n">${(100 / nOff[c.frequency]).toFixed(0)}%</td></tr>`).join('') + '</tbody>';
+
+  // luck KPIs
+  const cnt = v => D.noise.filter(n => n.verdict === v).length;
+  $('luckKpis').innerHTML = [['better than luck', 'Beat the ceiling'], ['too close to call', 'Within 0.01 of it'], ['within luck', 'Below it']]
+    .map(([v, l]) => `<div class="kpi"><div class="v">${cnt(v)} / ${D.noise.length}</div><div class="l">${l}</div></div>`).join('');
+
+  // quality KPIs and screen table
+  $('qualityKpis').innerHTML = D.quality.map(q =>
+    `<div class="kpi"><div class="v">${q.n_fail} / ${q.n_series}</div><div class="l">${q.source}: series that fail</div></div>`).join('');
+  function screenTable() {
+    const rows = D.screen.filter(r => screenFilter === 'all' || r.flag === 'FAIL')
+      .sort((a, b) => (a.flag === b.flag ? a.binomial_p - b.binomial_p : a.flag === 'FAIL' ? -1 : 1));
+    const pf = p => p < 1e-3 ? p.toExponential(1) : p.toFixed(3);
+    $('screenTable').innerHTML = `<thead><tr><th>Series</th><th>Source</th><th class="n">Open at low</th><th class="n">Open at high</th><th class="n">p-value</th><th class="n">Open outside range</th><th>Result</th></tr></thead><tbody>` +
+      rows.map(r => `<tr><td>${r.series}</td><td>${r.source}</td><td class="n">${r.open_at_low}</td><td class="n">${r.open_at_high}</td><td class="n">${pf(r.binomial_p)}</td><td class="n">${r.open_outside_range_pct.toFixed(1)}%</td><td><span class="chip ${r.flag === 'FAIL' ? 'fail' : 'pass'}">${r.flag === 'FAIL' ? 'Fail' : 'Pass'}</span></td></tr>`).join('') + '</tbody>';
+  }
+
+  // charts
+  function base() {
+    const ink = css('--muted'), rule = css('--rule');
+    Chart.defaults.font.family = css('--body'); Chart.defaults.font.size = 12; Chart.defaults.color = ink;
+    return {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { grid: { color: rule }, ticks: { color: ink } }, y: { grid: { color: rule }, ticks: { color: ink } } }
+    };
+  }
+  const bhLine = (y, color) => ({
+    id: 'bhLine', afterDatasetsDraw(c) {
+      const { ctx, chartArea: a, scales: { y: s } } = c; const py = s.getPixelForValue(y);
+      ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+      ctx.beginPath(); ctx.moveTo(a.left, py); ctx.lineTo(a.right, py); ctx.stroke();
+      ctx.setLineDash([]); ctx.fillStyle = color; ctx.font = '600 12px ' + css('--mono'); ctx.textAlign = 'left';
+      ctx.fillText('Buy & hold ' + money(y), a.left + 6, py - 6); ctx.restore();
+    }
+  });
+
+  function drawMoney() {
+    const key = 'v' + cost, vals = best.map(b => b[key]);
+    const o = base();
+    o.scales.y.title = { display: true, text: 'Final value of $100' };
+    o.scales.y.ticks.callback = v => money(v);
+    o.scales.y.beginAtZero = true;
+    o.scales.x.grid.display = false;
+    o.plugins.tooltip = { callbacks: { title: i => best[i[0].dataIndex].label, label: i => money(i.raw) + ' at ' + cost + ' bp' } };
+    charts.money && charts.money.destroy();
+    charts.money = new Chart($('moneyChart'), {
+      type: 'bar', data: { labels: FREQ, datasets: [{ data: vals, backgroundColor: vals.map(v => v > BH ? css('--good') : css('--bad')), borderRadius: 2, maxBarThickness: 64 }] },
+      options: o, plugins: [bhLine(BH, css('--bh'))]
+    });
+  }
+
+  function drawLuck() {
+    const groups = { Top: css('--bh'), Median: css('--good'), Worst: css('--bad'), 'Top-minus-Worst': css('--flag') };
+    $('luckLegend').innerHTML = Object.entries(groups).map(([g, c]) => `<span><i style="background:${c}"></i>${g}</span>`).join('');
+    const o = base();
+    o.scales.x.title = { display: true, text: 'Luck ceiling (Sharpe a random search reaches)' };
+    o.scales.y.title = { display: true, text: 'Best real Sharpe ratio' };
+    o.scales.x.min = o.scales.y.min = 0.4; o.scales.x.max = o.scales.y.max = 0.72;
+    o.plugins.tooltip = { callbacks: { label: i => { const r = i.raw.r; return `${r.universe} ${r.split} ${r.grp}: ${r.best_sharpe.toFixed(3)} vs ${r.luck_ceiling.toFixed(3)} (${r.verdict})`; } } };
+    const diag = { id: 'diag', beforeDatasetsDraw(c) {
+      const { ctx, scales: { x, y } } = c; ctx.save(); ctx.strokeStyle = css('--muted'); ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(x.getPixelForValue(0.4), y.getPixelForValue(0.4)); ctx.lineTo(x.getPixelForValue(0.72), y.getPixelForValue(0.72)); ctx.stroke();
+      ctx.setLineDash([]); ctx.fillStyle = css('--muted'); ctx.font = '12px ' + css('--body');
+      ctx.fillText('better than luck', x.getPixelForValue(0.42), y.getPixelForValue(0.70)); ctx.fillText('within luck', x.getPixelForValue(0.63), y.getPixelForValue(0.43)); ctx.restore(); } };
+    charts.luck && charts.luck.destroy();
+    charts.luck = new Chart($('luckChart'), {
+      type: 'scatter',
+      data: { datasets: Object.keys(groups).map(g => ({ label: g, data: D.noise.filter(n => n.grp === g).map(n => ({ x: n.luck_ceiling, y: n.best_sharpe, r: n })), backgroundColor: groups[g], pointRadius: 5, pointHoverRadius: 7 })) },
+      options: o, plugins: [diag]
+    });
+  }
+
+  function drawCal() {
+    const o = base(); o.scales.x.grid.display = false; o.scales.y.beginAtZero = true;
+    o.scales.y.title = { display: true, text: 'Average Sharpe range (best date minus worst)' };
+    charts.cal && charts.cal.destroy();
+    charts.cal = new Chart($('calChart'), { type: 'bar', data: { labels: cal.map(c => c.frequency), datasets: [{ data: cal.map(c => c.avg_sharpe_range_across_dates), backgroundColor: css('--accent'), borderRadius: 2, maxBarThickness: 64 }] }, options: o });
+  }
+
+  function drawLegs(src, id) {
+    const col = { Overnight: css('--bad'), Daytime: css('--good'), 'Buy and hold': css('--bh') };
+    const o = base(); o.scales.x.grid.display = false; o.scales.y.min = 40; o.scales.y.max = 220;
+    o.scales.y.ticks.callback = v => money(v);
+    o.plugins.tooltip = { callbacks: { label: i => i.dataset.label + ': ' + money(i.raw) } };
+    const legs = Object.keys(col).map(l => ({ l, pts: D.legs[src + '|' + l] }));
+    const labels = ['start'].concat(legs[0].pts.map(p => p[0])).map(x => x === 'start' ? '' : x);
+    charts[id] && charts[id].destroy();
+    charts[id] = new Chart($(id), {
+      type: 'line',
+      data: { labels, datasets: legs.map(({ l, pts }) => ({ label: l, data: [100].concat(pts.map(p => p[1])), borderColor: col[l], backgroundColor: col[l], borderWidth: 2.5, pointRadius: 0, tension: 0.15 })) },
+      options: o
+    });
+  }
+
+  function drawAll() { drawMoney(); drawLuck(); drawCal(); drawLegs('Free provider', 'freeChart'); drawLegs('Exchange futures', 'exChart'); }
+
+  function seg(id, attr, cb) {
+    $(id).addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      $(id).querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+      cb(b.dataset[attr]);
+    });
+  }
+  seg('costSeg', 'c', v => { cost = +v; drawMoney(); });
+  seg('screenSeg', 'f', v => { screenFilter = v; screenTable(); });
+
+  moneyTable(); screenTable();
+  if (window.Chart) drawAll();
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  mq.addEventListener && mq.addEventListener('change', () => window.Chart && drawAll());
+  new MutationObserver(() => window.Chart && drawAll()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+})();
+</script>
+</body>
+</html>

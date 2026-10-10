@@ -74,7 +74,7 @@ with tab4:
     fig = px.line(legs, x='month', y='value', color='leg', facet_col='source', labels={'value': 'Growth of $100'})
     st.plotly_chart(fig, width='stretch')
     st.caption('On the free feed the overnight leg loses 39% and the daytime leg almost doubles; on exchange futures both are near zero. '
-               'The difference is a stale opening price in the free feed.')
+               "The difference traces to a persistent downward bias in the free feed's recorded opening prices.")
 
 with tab5:
     st.subheader('Open-price screen: does the recorded open sit at the low far more often than at the high?')

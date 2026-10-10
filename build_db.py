@@ -40,7 +40,7 @@ def main():
     # ---------------------------------
     con.executemany('INSERT INTO dim_study VALUES (?,?,?,?,?,?,?,?)', [
         (1, 'DXY', 'Two Blind Spots in Backtest Validation: From a Manufactured Dollar Index Anomaly to a Corrected Null Result',
-         'Risks (MDPI)', 'Submitted', '2010-12-01', '2025-12-30', 'https://github.com/RyanSingh0/dxy-fx-strategies'),
+         'Risks (MDPI)', 'Under review, revision submitted', '2010-12-01', '2025-12-30', 'https://github.com/RyanSingh0/dxy-fx-strategies'),
         (2, 'COMMODITIES', 'Volatility Sorting, an Untradeable Reversal and Rebalance-Date Luck: What Survives a Declared Search Over Cross-Sectional Commodity Strategies',
          'Commodities (MDPI)', 'Manuscript ready', N['eval_start'], N['eval_end'], 'https://github.com/RyanSingh0/commodity-tercile-strategies')])
 
@@ -126,18 +126,20 @@ def main():
     # ---------------------------------
     # Numbers must match the manuscripts exactly. Hardcoded ones come from the file in the last column.
     F = [
-        (1, 'Data defect', 'Overnight-leg Sharpe ratio', -1.43, 'Free provider', 0.25, 'Exchange futures',
-         'The same trading rule on the same index shows a strong overnight effect on free data and none on exchange data.', 'Risks manuscript, Sec. 3 and 8; results/part1_exchange_battery.txt'),
+        (1, 'Data defect', 'Overnight-leg Sharpe ratio', -1.36, 'Free provider (same sessions)', 0.25, 'Exchange futures',
+         'The same trading rule on the same sessions shows a strong overnight effect on free data (p < 0.0001) and none on exchange futures (p = 0.33).', 'Risks manuscript, Revision 1; results/revision/text_numbers.txt'),
         (1, 'Data defect', 'Headline strategy total return (%)', 218.8, 'Free provider', 1.0, 'Exchange futures',
          'A backtest that more than tripled money on free data earns about 1% on correct data.', 'Risks manuscript, Sec. 5; results/part1_exchange_battery.txt'),
         (1, 'Data defect', 'Probability of backtest overfitting', 0.016, 'Free provider', 0.765, 'Exchange futures',
-         'The standard overfitting check calls the fake result robust and the real data noise: the tool certifies the defect.', 'Risks manuscript, Sec. 8; results/part1_exchange_battery.txt'),
+         'The standard overfitting check rates the false result robust and the correct data as likely overfit.', 'Risks manuscript, Sec. 8; results/part1_exchange_battery.txt'),
         (1, 'Data defect', 'Opens at the daily low vs high', 204, 'Free provider (at low)', 82, 'Free provider (at high)',
-         'A one-line statistical check on the data itself (p = 3.7e-13) finds the problem with no second data source.', 'results/part1_exchange_battery.txt'),
+         'A one-line check on the data itself (p = 3.7e-13) flags the free feed and none of the six exchange futures series, with 3.3% false alarms across 30 clean three-year windows.', 'results/part1_exchange_battery.txt; results/revision/screen_study.txt'),
         (1, 'Undeclared search', 'Regime-strategy Sharpe as reported vs deflated Sharpe after declaring 216 configurations', 0.72, 'Reported', 0.613, 'Deflated Sharpe (needs > 0.95)',
-         'A strategy that looked significant fails every correction once all the variants that were tried are counted.', 'Risks manuscript, Sec. 9; results/part2_declared_search.txt'),
-        (1, 'Honest search', 'Best Sharpe of 1,312 configurations vs luck ceiling', 0.653, 'Best real', 0.712, 'Luck ceiling (block bootstrap)',
-         'A correctly declared search of 1,312 published strategy specifications finds none better than luck.', 'Risks manuscript, Sec. 10; results/part3_search.txt'),
+         'A strategy first reported at 0.79 drops to 0.72 after a code fix and fails every correction once all 216 variants that were tried are counted.', 'Risks manuscript, Revision 1; results/part2_declared_search.txt; results/revision/text_numbers.txt'),
+        (1, 'Honest search', 'Best Sharpe of 1,312 configurations vs mean luck ceiling (2,000 bootstrap runs)', 0.653, 'Best real', 0.737, 'Luck ceiling (mean of 2,000 runs)',
+         'Re-running the whole 1,312-strategy search on 2,000 resampled versions of the data, the real best sits at the 23rd percentile of what luck alone produces (p = 0.77).', 'Risks manuscript, Revision 1; results/revision/ceiling_summary.txt'),
+        (1, 'Carry', 'Carry Sharpe: futures (roll signal) vs 24-year spot total return', 0.377, 'Futures 2011-2025', 0.019, 'Spot total return 2002-2026',
+         'An apparent carry reversal was mostly a missing interest term; neither version beats its own luck ceiling (p 0.21 and 0.40).', 'Risks manuscript, Revision 1; results/revision/carry_instability.txt'),
         (2, 'Momentum', 'Best momentum-spread Sharpe vs median best under random ranking', max(x['best_real'] for x in N['noise_ceiling'] if x['Group'] == 'Top-minus-Worst'), 'Best real',
          float(np.median([x['null_median'] for x in N['noise_ceiling'] if x['Group'] == 'Top-minus-Worst'])), 'Random ranking (median best)',
          'Buying recent winners and selling recent losers does no better than a random ranking in a search this size.', 'Commodities manuscript, Sec. 4.2'),

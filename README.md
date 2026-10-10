@@ -9,7 +9,7 @@ costs, is it better than luck, and does it depend on an arbitrary date.
 
 | Study | Journal | Code |
 |---|---|---|
-| Two Blind Spots in Backtest Validation (U.S. Dollar Index) | Risks (MDPI), submitted | [dxy-fx-strategies](https://github.com/RyanSingh0/dxy-fx-strategies) |
+| Two Blind Spots in Backtest Validation (U.S. Dollar Index) | Risks (MDPI), under review (revision submitted) | [dxy-fx-strategies](https://github.com/RyanSingh0/dxy-fx-strategies) |
 | Volatility Sorting, an Untradeable Reversal and Rebalance-Date Luck (commodities) | Commodities (MDPI), manuscript | [commodity-tercile-strategies](https://github.com/RyanSingh0/commodity-tercile-strategies) |
 
 ## What's here
@@ -23,6 +23,7 @@ docs/index.html      the static dashboard served by GitHub Pages
 build_db.py          rebuilds research.db from the two research repos (needs the licensed data)
 export_web.py        views -> web/data.json
 build_page.py        web/ + data.json -> docs/index.html
+sql/revision1.sql    updates a pre-revision research.db to the Risks Revision 1 numbers
 ```
 
 ## Questions the views answer

@@ -60,7 +60,7 @@
 
 <section id="dollar">
   <div class="sec-head"><div class="eyebrow">05 &middot; U.S. Dollar Index &middot; Dec 2010 to Dec 2025</div><h2>Same rule, two data feeds</h2>
-  <p>Split each day into an overnight part (previous close to open) and a daytime part (open to close). On a free data feed the overnight part loses money steadily and the daytime part nearly doubles. On exchange futures data for the same index, neither shows anything. The difference is a stale opening price in the free feed.</p></div>
+  <p>Split each day into an overnight part (previous close to open) and a daytime part (open to close). On a free data feed the overnight part loses money steadily and the daytime part nearly doubles. On exchange futures data for the same index, neither shows anything. The difference traces to a persistent downward bias in the free feed's recorded opening prices.</p></div>
   <div class="legend"><span><i style="background:var(--bad)"></i>Overnight</span><span><i style="background:var(--good)"></i>Daytime</span><span><i style="background:var(--bh)"></i>Buy &amp; hold</span></div>
   <div class="grid2">
     <div class="panel"><h3>Free data feed</h3><div class="chart"><canvas id="freeChart" aria-label="Free feed legs"></canvas></div></div>
@@ -78,7 +78,7 @@
       <button id="sAll" data-f="all" aria-pressed="true">All 37 series</button><button id="sFail" data-f="fail" aria-pressed="false">Failing only</button></div></div>
     <div class="tbl"><table id="screenTable"></table></div>
   </div>
-  <p class="callout">The Barchart exchange-sourced futures (dollar index and five currencies) pass, and the free dollar index feed fails with p = 3.7e-13. The flagged Bloomberg series are the London Metal Exchange contracts, whose recorded open sits outside the daily range on 6&ndash;8% of days, and three U.S. grains (corn, soybeans, Kansas wheat) plus coffee.</p>
+  <p class="callout">The Barchart exchange-sourced futures (dollar index and five currencies) pass, and the free dollar index feed fails with p = 3.7e-13. Tested on clean exchange data the check raised false alarms in only 3.3% of 30 three-year windows, and it catches a low price written into the open field on just 1% of days 99.8% of the time. It cannot see an open that simply repeats the previous close. The flagged Bloomberg series are the London Metal Exchange contracts, whose recorded open sits outside the daily range on 6&ndash;8% of days, and three U.S. grains (corn, soybeans, Kansas wheat) plus coffee.</p>
 </section>
 
 <section id="business">

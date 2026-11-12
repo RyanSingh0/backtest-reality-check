@@ -40,9 +40,9 @@ def main():
     # ---------------------------------
     con.executemany('INSERT INTO dim_study VALUES (?,?,?,?,?,?,?,?)', [
         (1, 'DXY', 'Two Blind Spots in Backtest Validation: From a Manufactured Dollar Index Anomaly to a Corrected Null Result',
-         'Risks (MDPI)', 'Under review, revision submitted', '2010-12-01', '2025-12-30', 'https://github.com/RyanSingh0/dxy-fx-strategies'),
+         'Risks (MDPI)', 'Published 23 Oct 2026, vol. 14(11), 247', '2010-12-01', '2025-12-30', 'https://github.com/RyanSingh0/dxy-fx-strategies'),
         (2, 'COMMODITIES', 'Volatility Sorting, an Untradeable Reversal and Rebalance-Date Luck: What Survives a Declared Search Over Cross-Sectional Commodity Strategies',
-         'Commodities (MDPI)', 'Manuscript ready', N['eval_start'], N['eval_end'], 'https://github.com/RyanSingh0/commodity-tercile-strategies')])
+         'Commodities (MDPI)', 'Under review', N['eval_start'], N['eval_end'], 'https://github.com/RyanSingh0/commodity-tercile-strategies')])
 
     # ---------------------------------
     # 2) INSTRUMENTS
